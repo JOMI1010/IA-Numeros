@@ -1,13 +1,10 @@
-from flask import Flask, request, jsonify
+import streamlit as st
 import tensorflow as tf
 from tensorflow.keras.models import model_from_json
 import numpy as np
 from PIL import Image
 import io
 import base64
-
-# Crear una aplicación Flask
-app = Flask(__name__)
 
 # Cargar el modelo
 def load_model():
@@ -26,6 +23,18 @@ def load_model():
 # Cargar el modelo al inicio
 model = load_model()
 
+# Título de la aplicación
+st.title('Predicción de Números MNIST')
+
+# Explicación
+st.write("""
+    Esta aplicación utiliza un modelo entrenado para reconocer números escritos a mano (0-9) 
+    usando el conjunto de datos MNIST. Suba una imagen para hacer una predicción.
+""")
+
+# Subir la imagen
+uploaded_file = st.file_uploader("Sube una imagen de un número (0-9)", type=["jpg", "png", "jpeg"])
+
 # Función para preprocesar la imagen
 def preprocess_image(image_bytes):
     # Convertir la imagen a un formato que TensorFlow pueda usar
@@ -38,35 +47,24 @@ def preprocess_image(image_bytes):
     image = np.expand_dims(image, axis=0)  # Añadir la dimensión de batch
     return image
 
-# Endpoint para hacer predicciones
-@app.route('/predict', methods=['POST'])
-def predict():
-    try:
-        # Obtener la imagen desde la solicitud POST
-        img_data = request.json.get('image')
-        
-        # Decodificar la imagen (asumimos que es una imagen base64)
-        img_data = base64.b64decode(img_data)
-        
-        # Preprocesar la imagen
-        image = preprocess_image(img_data)
-        
-        # Realizar la predicción
-        predictions = model.predict(image)
-        
-        # Obtener la clase con mayor probabilidad
-        predicted_class = np.argmax(predictions)
-        
-        # Devolver la respuesta como JSON
-        return jsonify({'prediction': int(predicted_class), 'probability': float(np.max(predictions))})
-    
-    except Exception as e:
-        return jsonify({'error': str(e)}), 400
+# Si se ha subido una imagen
+if uploaded_file is not None:
+    # Mostrar la imagen subida
+    st.image(uploaded_file, caption="Imagen Subida", use_column_width=True)
 
-# Ruta principal
-@app.route('/')
-def index():
-    return "Bienvenido a la API de predicción de números del 0 al 9."
+    # Preprocesar la imagen
+    image = preprocess_image(uploaded_file.getvalue())
+
+    # Realizar la predicción
+    predictions = model.predict(image)
+
+    # Obtener la clase con mayor probabilidad
+    predicted_class = np.argmax(predictions)
+    predicted_probability = np.max(predictions)
+
+    # Mostrar la predicción
+    st.write(f"El número predicho es: **{predicted_class}**")
+    st.write(f"Probabilidad de la predicción: **{predicted_probability:.2f}**")
 
 if __name__ == '__main__':
     app.run(debug=True)
