@@ -65,6 +65,3 @@ if uploaded_file is not None:
     # Mostrar la predicción
     st.write(f"El número predicho es: **{predicted_class}**")
     st.write(f"Probabilidad de la predicción: **{predicted_probability:.2f}**")
-
-if __name__ == '__main__':
-    app.run(debug=True)
